@@ -3,14 +3,34 @@
 ## Connect to AWS
 
 ```
-$ ssh -i /Users/apple/Workspace/90-Config/10-KeyPair/steve_nguyen_key_pair.pem ec2-user@ec2-54-149-77-190.us-west-2.compute.amazonaws.com
+For an Amazon Linux AMI, the user name is ec2-user.
+
+For a Centos AMI, the user name is centos.
+
+For a Debian AMI, the user name is admin or root.
+
+For a Fedora AMI, the user name is ec2-user or fedora.
+
+For a RHEL AMI, the user name is ec2-user or root.
+
+For a SUSE AMI, the user name is ec2-user or root.
+
+For an Ubuntu AMI, the user name is ubuntu or root.
+```
+
+```
+$ ssh -i /Users/apple/Workspace/90-Config/10-KeyPair/aws_thanhlam297_key_pair.pem centos@ec2-54-149-226-94.us-west-2.compute.amazonaws.com
 ```
 
 ## Installation and Configuration
 
-* Downloads 
+### Downloads 
 
 ```
+$ sudo yum install zip unzip -y
+$ sudo yum install wget
+$ sudo yum install vim
+$ sudo yum install git
 $ mkdir downloads
 ```
 * Tomcat
@@ -45,19 +65,18 @@ $ unzip logstash-6.2.3.zip
 * Jfrog Artifactory
     * Download [Jfrog Artifactory](https://api.bintray.com/content/jfrog/artifactory/jfrog-artifactory-oss-$latest.zip;bt_package=jfrog-artifactory-oss-zip)
 ```
-$ wget https://api.bintray.com/content/jfrog/artifactory/jfrog-artifactory-oss-$latest-sources.tar.gz;bt_package=jfrog-artifactory-oss-zip
 $ unzip jfrog-artifactory-oss-5.9.1.zip
 ```
 
 ```
 $ mkdir devops
 $ cd devops
-$ cp -R ../downloads/apache-maven-3.5.3 /usr/lib/
+$ sudo cp -R ../downloads/apache-maven-3.5.3 /usr/lib/
 $ cp -R ../downloads/apache-tomcat-8.5.29 .
 $ cp -R ../downloads/elasticsearch-6.2.3 .
 $ cp -R ../downloads/kibana-6.2.3-linux-x86_64 .
 $ cp -R ../downloads/logstash-6.2.3 .
-$ cp -R ../downloads/jfrog-artifactory-oss-5.9.1/ .
+$ cp -R ../downloads/artifactory-oss-5.9.1/ .
 ```
 
 ### Config Tomcat
@@ -89,8 +108,7 @@ $ vi  ../webapps/manager/META-INF/context.xml
 </Context>
 ```
 ```
-$ cd ..
-$ cd bin
+$ cd ../bin
 $ chmod +x *.sh
 $ ./catalina.sh start
 $ tail ../logs/catalina.out
@@ -104,12 +122,8 @@ $ vi .bash_profile
 ```
 
 ```
-# java setting
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_25.jdk/Contents/Home
-export PATH=$PATH:$JAVA_HOME/bin
-
 #maven setting
-export M2_HOME=/home/ec2-user/devops/apache-maven-3.5.3
+export M2_HOME=/usr/lib/apache-maven-3.5.3
 export M2=$M2_HOME/bin
 export PATH=$PATH:$M2
 ```
@@ -119,10 +133,86 @@ $ more .bash_profile
 $ source ~/.bash_profile
 ```
 
+### Maven security setting
+
+```
+$ mkdir  /home/centos/.m2
+$ cd /home/centos/.m2
+$ mvn -emp password
+{Aorr/QuO7NIH7KAAUEcS3+/wLYyEXEduDHXIJDl8XXs=}
+$ vi settings-security.xml
+```
+
+```xml
+<settingsSecurity> 
+    <master>{Aorr/QuO7NIH7KAAUEcS3+/wLYyEXEduDHXIJDl8XXs=}</master> 
+</settingsSecurity>
+```
+
+```
+$ mvn -ep password
+{TvNQlTbGvEoH7lhjT/hyC4LCA07SIKfMpai2+FHgHIs=}
+$ vi settings.xml
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <profiles>
+    <profile>
+      <id>default</id>
+      <repositories>
+        <repository>
+          <id>release</id>
+          <name>release</name>
+          <url>http://54.212.200.31:8040/artifactory/libs-release-local</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>snapshot</id>
+          <name>snapshot</name>
+          <url>http://54.212.200.31:8040/artifactory/libs-snapshot-local</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>default</activeProfile>
+  </activeProfiles>
+  <servers>
+    <server>
+      <id>release</id>
+      <username>admin</username>
+      <password>{TvNQlTbGvEoH7lhjT/hyC4LCA07SIKfMpai2+FHgHIs=}</password>
+    </server>
+    <server>
+      <id>snapshot</id>
+      <username>admin</username>
+      <password>{TvNQlTbGvEoH7lhjT/hyC4LCA07SIKfMpai2+FHgHIs=}</password>
+    </server>
+  </servers>
+</settings>
+
+```
+
 
 ### Install Java 8
 
 ```
+$ scp -i /Users/apple/Workspace/90-Config/10-KeyPair/aws_thanhlam297_key_pair.pem jdk-8u161-linux-x64.tar.gz ec2-user@ec2-54-245-142-22.us-west-2.compute.amazonaws.com:~/downloads/
+$ cd downloads
 $ tar -xvzf jdk-8u161-linux-x64.tar.gz
 $ sudo cp -R jdk1.8.0_161 /usr/lib/jvm/
 ```
@@ -130,7 +220,6 @@ $ sudo cp -R jdk1.8.0_161 /usr/lib/jvm/
 * Set Java environment
 ```
 $ cd
-$ ls -all
 $ vi .bash_profile
 ```
 ```
@@ -159,6 +248,86 @@ $ update-alternatives --list javac
 ```
 $ cd devops/artifactory-oss-5.9.1/bin
 $ ./artifactory.sh
+```
+* http://localhost:8040/
+
+* Skip Set Admin Password
+* Skip Configure a Proxy Server
+* Create Repositories: Chose maven
+
+![Create Repositories](CI_CD_Guid_Images/artifactory-create-repositories.png)
+
+* Default Username: admin
+* Default Passord: password
+
+### Generate and adding a new SSH key to your GitHub account
+
+
+```
+$ ssh-keygen -t rsa -b 4096 -C "thanhlam297@gmail.com"
+$ eval "$(ssh-agent -s)"
+$ ssh-add -K ~/.ssh/id_rsa
+$ more < ~/.ssh/id_rsa.pub
+```
+
+* Copy key to github
+![](CI_CD_Guid_Images/github-ssh-key.png)
+
+### Config git branch in prompt
+
+```
+vi .bash_profile
+```
+
+```
+#git branch in prompt.
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+
+#prompt settings
+export PS1="\u@\h \w\[\033[34m\]\$(parse_git_branch)\[\033[00m\]$"
+```
+
+```
+$ source .bash_profile
+```
+
+### Configure for SCM and Artifactory
+
+* Add to pom.xml in Spring Boot Project
+
+```xml
+<distributionManagement>
+  <repository>
+    <id>release</id>
+    <name>releases</name>
+    <url>http://54.212.200.31:8040/artifactory/libs-release-local</url>
+  </repository>
+  <snapshotRepository>
+    <id>snapshot</id>
+    <name>snapshots</name>
+    <url>http://54.212.200.31:8040/artifactory/libs-snapshot-local</url>
+  </snapshotRepository>
+</distributionManagement>
+
+<scm>
+  <connection>scm:git:git@github.com:lamnguyen297/devops.git</connection>
+  <developerConnection>scm:git:git@github.com:lamnguyen297/devops.git</developerConnection>
+  <url>git@github.com:lamnguyen297/devops.git</url>
+  <tag>HEAD</tag>
+</scm>
+
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-release-plugin</artifactId>
+  <version>2.5.1</version>
+  <configuration>
+    <tagNameFormat>v@{project.version}</tagNameFormat>
+    <autoVersionSubmodules>true</autoVersionSubmodules>
+  </configuration>
+</plugin>
+
 ```
 
 ### Install and Configuration Jenkins
@@ -208,6 +377,11 @@ $ sudo service jenkins stop
 $ sudo service jenkins start
 $ sudo service jenkins restart
 ```
+* copy maven setting to jenkins
+
+```
+$ sudo cp .m2/*.xml /var/lib/jenkins/.m2
+```
 
 * `Manage Jenkins` -> `Manage Plugins` -> `Available` tab to install plugins below:
 
@@ -233,26 +407,13 @@ $ sudo service jenkins restart
     ```
 * Config Jenkins with GitHub
 
-    * Generating a new SSH key
-    ```
-    $ ssh-keygen -t rsa -b 4096 -C "thanhlam297@gmail.com"
-    $ eval "$(ssh-agent -s)"
-    $ ssh-add -K ~/.ssh/id_rsa
-    $ cd .ssh
-    $ more id_rsa.pub
-    ```
-
-    * Install Git
-    ```
-    $ sudo yum install git
-    ```
-    ```
-    $ sudo su jenkins
-    $ cd
-    $ ssh -T git@github.com
-    $ git config --global user.name "jenkins"
-    $ git config --global user.email thanhlam297@gmail.com
-    ```
+```
+$ sudo su jenkins
+$ cd
+$ ssh -T git@github.com
+$ git config --global user.name "jenkins"
+$ git config --global user.email thanhlam297@gmail.com
+```
 * Create New Job on Jenkins
 ![](CI_CD_Guid_Images/Jenkins-CI-step03.png)
 ![](CI_CD_Guid_Images/Jenkins-CI-step031.png)

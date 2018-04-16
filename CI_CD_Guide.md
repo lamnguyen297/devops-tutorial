@@ -117,6 +117,12 @@ $ mvn -emp password
 $ vi settings-security.xml
 ```
 
+```xml
+<settingsSecurity> 
+    <master>{Aorr/QuO7NIH7KAAUEcS3+/wLYyEXEduDHXIJDl8XXs=}</master> 
+</settingsSecurity>
+```
+
 ```
 $ mvn -ep password
 ```
